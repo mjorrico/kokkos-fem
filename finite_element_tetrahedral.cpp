@@ -64,17 +64,17 @@ void calculate(const JacobianType& J, AType& A, const long N) {
         Number G4 = d * (J(i, 0, 1) * J(i, 0, 2) + J(i, 1, 1) * J(i, 1, 2) + J(i, 2, 1) * J(i, 2, 2)); // 6 FLOP
         Number G5 = d * (J(i, 0, 2) * J(i, 0, 2) + J(i, 1, 2) * J(i, 1, 2) + J(i, 2, 2) * J(i, 2, 2)); // 6 FLOP
 
-        A(i, 0, 0) = G0;
-        A(i, 0, 1) = A(i, 1, 0) = G1;
+        A(i, 0, 0) = G0; // taken care of by memory controller
+        A(i, 0, 1) = A(i, 1, 0) = G1; // FIX THIS LATER, DON'T USE DOUBLE =
         A(i, 0, 2) = A(i, 2, 0) = G2;
-        A(i, 0, 3) = A(i, 3, 0) = -G0 - G1 - G2; // 3 FLOP
+        A(i, 0, 3) = A(i, 3, 0) = -G0 - G1 - G2; // 2 FLOP
         A(i, 1, 1) = G3;
         A(i, 1, 2) = A(i, 2, 1) = G4;
-        A(i, 1, 3) = A(i, 3, 1) = -G1 - G3 - G4; // 3 FLOP
+        A(i, 1, 3) = A(i, 3, 1) = -G1 - G3 - G4; // 2 FLOP
         A(i, 2, 2) = G5;
-        A(i, 2, 3) = A(i, 3, 2) = -G2 - G4 - G5; // 3 FLOP
+        A(i, 2, 3) = A(i, 3, 2) = -G2 - G4 - G5; // 2 FLOP
         A(i, 3, 3) = G0 + 2 * G1 + 2 * G2 + G3 + 2 * G4 + G5; // 8 FLOP
-        // TOTAL: 69 FLOP
+        // TOTAL: 72 FLOP
     });
 }
 
@@ -106,11 +106,11 @@ void benchmark(long N, long repeat) {
 
 
     Kokkos::Timer timer;
-    for (unsigned long i = 0; i < repeat; i++) {
+    for (unsigned long i = 0; i < 1; i++) {
         Kokkos::deep_copy(jacobian, h_jacobian);
     }
     Kokkos::fence();
-    double T_host_to_device = timer.seconds() / repeat;
+    double T_host_to_device = timer.seconds() / 1;
 
 
     timer.reset();
