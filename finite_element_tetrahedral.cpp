@@ -8,7 +8,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#define Number double
+#define Number float
 #define MemLayout Kokkos::LayoutLeft
 
 #ifdef KOKKOS_ENABLE_CUDA
@@ -171,9 +171,9 @@ void benchmark(long N, long repeat) {
         << std::setw(10) << bw_io << " GB/s "
         << std::setw(10) << mupd << " MUPD/S "
         << std::setw(10) << GFLOPS << " GFLOP/s " 
-        // << "| BW in: "
-        // << std::setw(10) << bw_in << " GB/s, BW out: "
-        // << std::setw(10) << bw_out << " GB/s"
+        << "| BW in: "
+        << std::setw(10) << bw_in << " GB/s, BW out: "
+        << std::setw(10) << bw_out << " GB/s"
         << std::endl;
 }
 
