@@ -1,5 +1,5 @@
-KOKKOS_PATH = ${HOME}/Kokkos/kokkos
-KOKKOS_DEVICES = "Cuda,OpenMP"
+KOKKOS_PATH = ${HOME}/kokkos
+KOKKOS_DEVICES = "Cuda"
 EXE_NAME = "finite_element_tetrahedral"
 
 SRC = $(wildcard *.cpp)

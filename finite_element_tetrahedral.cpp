@@ -62,17 +62,24 @@ void calculate(const JacobianType& J, AType& A, const long N) {
         Number G2 = d * (J(i, 0, 0) * J(i, 0, 2) + J(i, 1, 0) * J(i, 1, 2) + J(i, 2, 0) * J(i, 2, 2)); // 6 FLOP
         Number G3 = d * (J(i, 0, 1) * J(i, 0, 1) + J(i, 1, 1) * J(i, 1, 1) + J(i, 2, 1) * J(i, 2, 1)); // 6 FLOP
         Number G4 = d * (J(i, 0, 1) * J(i, 0, 2) + J(i, 1, 1) * J(i, 1, 2) + J(i, 2, 1) * J(i, 2, 2)); // 6 FLOP
-        Number G5 = d * (J(i, 0, 2) * J(i, 0, 2) + J(i, 1, 2) * J(i, 1, 2) + J(i, 2, 2) * J(i, 2, 2)); // 6 FLOP
+        Number G5 = d * (J(i, 0, 2) * J(i, 0, 2) + J(i, 1, 2) * J(i, 1, 2) + J(i, 2, 2) * J(i, 2, 2)); // 6 FLOP // 52 FLOP
 
         A(i, 0, 0) = G0; // taken care of by memory controller
-        A(i, 0, 1) = A(i, 1, 0) = G1; // FIX THIS LATER, DON'T USE DOUBLE =
-        A(i, 0, 2) = A(i, 2, 0) = G2;
-        A(i, 0, 3) = A(i, 3, 0) = -G0 - G1 - G2; // 2 FLOP
+        // A(i, 0, 1) = A(i, 1, 0) = G1; // FIX THIS LATER, DON'T USE DOUBLE =
+        A(i, 0, 1) = G1;
+        A(i, 1, 0) = G1;
+        A(i, 0, 2) = G2;
+        A(i, 2, 0) = G2;
+        A(i, 0, 3) = -G0 - G1 - G2; // 2 FLOP
+        A(i, 3, 0) = -G0 - G1 - G2; // 2 FLOP
         A(i, 1, 1) = G3;
-        A(i, 1, 2) = A(i, 2, 1) = G4;
-        A(i, 1, 3) = A(i, 3, 1) = -G1 - G3 - G4; // 2 FLOP
+        A(i, 1, 2) = G4;
+        A(i, 2, 1) = G4;
+        A(i, 1, 3) = -G1 - G3 - G4; // 2 FLOP
+        A(i, 3, 1) = -G1 - G3 - G4; // 2 FLOP
         A(i, 2, 2) = G5;
-        A(i, 2, 3) = A(i, 3, 2) = -G2 - G4 - G5; // 2 FLOP
+        A(i, 2, 3) = -G2 - G4 - G5; // 2 FLOP
+        A(i, 3, 2) = -G2 - G4 - G5; // 2 FLOP
         A(i, 3, 3) = G0 + 2 * G1 + 2 * G2 + G3 + 2 * G4 + G5; // 8 FLOP
         // TOTAL: 72 FLOP
     });
@@ -105,14 +112,17 @@ void benchmark(long N, long repeat) {
     }
 
 
+    // HOST TO DEVICE
+    unsigned long repeat_h2d = 1;
     Kokkos::Timer timer;
-    for (unsigned long i = 0; i < 1; i++) {
+    for (unsigned long i = 0; i < repeat_h2d; i++) {
         Kokkos::deep_copy(jacobian, h_jacobian);
     }
     Kokkos::fence();
-    double T_host_to_device = timer.seconds() / 1;
+    double T_host_to_device = timer.seconds() / repeat_h2d;
 
 
+    // CALCULATE
     timer.reset();
     for (unsigned long i = 0; i < repeat; i++) {
         calculate<Jacobian_t, A_t, RP>(jacobian, A, N);
@@ -121,12 +131,14 @@ void benchmark(long N, long repeat) {
     double T_calculation = timer.seconds() / (double)repeat;
 
 
+    // DEVICE TO HOST
+    unsigned long repeat_d2h = 1;
     timer.reset();
-    for (unsigned long i = 0; i < repeat; i++) {
+    for (unsigned long i = 0; i < repeat_d2h; i++) {
         Kokkos::deep_copy(h_A, A);
     }
     Kokkos::fence();
-    double T_device_to_host = timer.seconds() / repeat;
+    double T_device_to_host = timer.seconds() / repeat_d2h;
 
     // int p = 1e6;
     // for (int k = p; k < p + 10; k++) {
@@ -140,27 +152,29 @@ void benchmark(long N, long repeat) {
     //     std::cout << std::endl;
     // }
 
-    double flop = 69 * N * 1e-9; // num of GFLOP
-    double GFLOPS = flop / T_calculation; // GFLOPS
+    double flop = 72 * N * 1e-9; // num of GFLOP
+    double GFLOPS = flop / T_calculation; // GFLOPS (this is per second)
     double memory_in = 9 * (N * sizeof(Number) * 1e-9); // GB
     double bw_in = memory_in / T_host_to_device; // GB/s
     double memory_out = 16 * (N * sizeof(Number) * 1e-9); // GB
     double bw_out = memory_out / T_device_to_host; // GB/s
-    double memory_io = (double)25 * ((double)N * (double)sizeof(Number) * (double)1e-9);
+    double memory_io = (double)25 * ((double)N * (double)sizeof(Number) * (double)1e-9); // GB
     double bw_io = memory_io / T_calculation; // GB/s
-    double mupd = N * 1e-6 / T_calculation; // MUPD
+    double mupd = 16 * N * 1e-6 / T_calculation; // MUPD
 
     std::cout << "Finite Element Tetahedral size: " << std::setw(10) << N << " ("
         << std::setw(12) << flop << " GFLOP, "
         << std::setw(12) << memory_in << " GB input, "
-        << std::setw(12) << memory_out << " GB output) repeats/avg_time: "
+        << std::setw(12) << memory_out << " GB output) repeats: "
         << std::setw(6) << repeat << " "
         << std::setw(12) << T_calculation << " seconds or "
         << std::setw(10) << bw_io << " GB/s "
         << std::setw(10) << mupd << " MUPD/S "
-        << std::setw(10) << GFLOPS << " GFLOP/s | BW in: "
-        << std::setw(10) << bw_in << " GB/s, BW out: "
-        << std::setw(10) << bw_out << " GB/s" << std::endl;
+        << std::setw(10) << GFLOPS << " GFLOP/s " 
+        // << "| BW in: "
+        // << std::setw(10) << bw_in << " GB/s, BW out: "
+        // << std::setw(10) << bw_out << " GB/s"
+        << std::endl;
 }
 
 
