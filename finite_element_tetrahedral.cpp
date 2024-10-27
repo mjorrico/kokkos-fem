@@ -209,4 +209,3 @@ void check_args(int argc, char* argv[], long& n_min, long& n_max, long& repeat) 
 
     if (n_max < n_min) n_max = n_min + 1;
 }
-
