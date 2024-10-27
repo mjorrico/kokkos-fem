@@ -2,3 +2,5 @@
 *.o
 *.hpp
 *.tmp
+*.pdf
+exercise-material.txt
