@@ -225,4 +225,3 @@ void check_args(int argc, char* argv[], long& n_min, long& n_max, long& repeat) 
         std::cout << "mem_layout: unknown" << std::endl;
     }
 }
-
