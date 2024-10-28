@@ -4,3 +4,5 @@
 *.tmp
 *.pdf
 exercise-material.txt
+core.*
+test.cpp

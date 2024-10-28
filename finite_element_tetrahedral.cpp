@@ -208,5 +208,21 @@ void check_args(int argc, char* argv[], long& n_min, long& n_max, long& repeat) 
     }
 
     if (n_max < n_min) n_max = n_min + 1;
+
+    if (std::is_same<Number, float>::value) {
+        std::cout << "datatype: float | ";
+    } else if (std::is_same<Number, double>::value) {
+        std::cout << "datatype: double | ";
+    } else {
+        std::cout << "datatype: unknown | ";
+    }
+
+    if (std::is_same<MemLayout, Kokkos::LayoutLeft>::value) {
+        std::cout << "mem_layout: Kokkos::LayoutLeft" << std::endl;
+    } else if (std::is_same<MemLayout, Kokkos::LayoutRight>::value) {
+        std::cout << "mem_layout: Kokkos::LayoutRight" << std::endl;
+    } else {
+        std::cout << "mem_layout: unknown" << std::endl;
+    }
 }
 
