@@ -3,6 +3,11 @@
 *.hpp
 *.tmp
 *.pdf
+KokkosCore_config.h
+
 exercise-material.txt
 core.*
 test.cpp
+*.a
+*.cuda
+*.host

@@ -8,8 +8,16 @@
 
 #include <Kokkos_Core.hpp>
 
-#define Number float
+#define STR(x)   #x
+#define PRINTAPI(x) printf("%s = %s\n", #x, STR(x))
+
+#ifndef NumberType
+#define NumberType float
+#endif
+
+#ifndef MemLayout
 #define MemLayout Kokkos::LayoutLeft
+#endif
 
 #ifdef KOKKOS_ENABLE_CUDA
 #define MemSpace Kokkos::CudaSpace
@@ -50,19 +58,19 @@ int main(int argc, char* argv[]) {
 template <typename JacobianType, typename AType, typename RP>
 void calculate(const JacobianType& J, AType& A, const long N) {
     Kokkos::parallel_for("calculate", RP(0, N), KOKKOS_LAMBDA(long i) {
-        Number C0 = J(i, 1, 1) * J(i, 2, 2) - J(i, 1, 2) * J(i, 2, 1); // 3 FLOP
-        Number C1 = J(i, 1, 2) * J(i, 2, 0) - J(i, 1, 0) * J(i, 2, 2); // 3 FLOP
-        Number C2 = J(i, 1, 0) * J(i, 2, 1) - J(i, 1, 1) * J(i, 2, 0); // 3 FLOP
+        NumberType C0 = J(i, 1, 1) * J(i, 2, 2) - J(i, 1, 2) * J(i, 2, 1); // 3 FLOP
+        NumberType C1 = J(i, 1, 2) * J(i, 2, 0) - J(i, 1, 0) * J(i, 2, 2); // 3 FLOP
+        NumberType C2 = J(i, 1, 0) * J(i, 2, 1) - J(i, 1, 1) * J(i, 2, 0); // 3 FLOP
 
-        Number inv_J_det = J(i, 0, 0) * C0 + J(i, 0, 1) * C1 + J(i, 0, 2) * C2; // 5 FLOP
-        Number d = (1. / 6.) / inv_J_det; // 2 FLOP
+        NumberType inv_J_det = J(i, 0, 0) * C0 + J(i, 0, 1) * C1 + J(i, 0, 2) * C2; // 5 FLOP
+        NumberType d = (1. / 6.) / inv_J_det; // 2 FLOP
 
-        Number G0 = d * (J(i, 0, 0) * J(i, 0, 0) + J(i, 1, 0) * J(i, 1, 0) + J(i, 2, 0) * J(i, 2, 0)); // 6 FLOP
-        Number G1 = d * (J(i, 0, 0) * J(i, 0, 1) + J(i, 1, 0) * J(i, 1, 1) + J(i, 2, 0) * J(i, 2, 1)); // 6 FLOP
-        Number G2 = d * (J(i, 0, 0) * J(i, 0, 2) + J(i, 1, 0) * J(i, 1, 2) + J(i, 2, 0) * J(i, 2, 2)); // 6 FLOP
-        Number G3 = d * (J(i, 0, 1) * J(i, 0, 1) + J(i, 1, 1) * J(i, 1, 1) + J(i, 2, 1) * J(i, 2, 1)); // 6 FLOP
-        Number G4 = d * (J(i, 0, 1) * J(i, 0, 2) + J(i, 1, 1) * J(i, 1, 2) + J(i, 2, 1) * J(i, 2, 2)); // 6 FLOP
-        Number G5 = d * (J(i, 0, 2) * J(i, 0, 2) + J(i, 1, 2) * J(i, 1, 2) + J(i, 2, 2) * J(i, 2, 2)); // 6 FLOP // 52 FLOP
+        NumberType G0 = d * (J(i, 0, 0) * J(i, 0, 0) + J(i, 1, 0) * J(i, 1, 0) + J(i, 2, 0) * J(i, 2, 0)); // 6 FLOP
+        NumberType G1 = d * (J(i, 0, 0) * J(i, 0, 1) + J(i, 1, 0) * J(i, 1, 1) + J(i, 2, 0) * J(i, 2, 1)); // 6 FLOP
+        NumberType G2 = d * (J(i, 0, 0) * J(i, 0, 2) + J(i, 1, 0) * J(i, 1, 2) + J(i, 2, 0) * J(i, 2, 2)); // 6 FLOP
+        NumberType G3 = d * (J(i, 0, 1) * J(i, 0, 1) + J(i, 1, 1) * J(i, 1, 1) + J(i, 2, 1) * J(i, 2, 1)); // 6 FLOP
+        NumberType G4 = d * (J(i, 0, 1) * J(i, 0, 2) + J(i, 1, 1) * J(i, 1, 2) + J(i, 2, 1) * J(i, 2, 2)); // 6 FLOP
+        NumberType G5 = d * (J(i, 0, 2) * J(i, 0, 2) + J(i, 1, 2) * J(i, 1, 2) + J(i, 2, 2) * J(i, 2, 2)); // 6 FLOP // 52 FLOP
 
         A(i, 0, 0) = G0; // taken care of by memory controller
         // A(i, 0, 1) = A(i, 1, 0) = G1; // FIX THIS LATER, DON'T USE DOUBLE =
@@ -90,8 +98,8 @@ void benchmark(long N, long repeat) {
     repeat = (repeat > 0) ? repeat : std::max(6UL, 10000000UL / N);
 
     typedef Kokkos::RangePolicy<ExecSpace> RP;
-    typedef Kokkos::View<Number* [3][3], MemLayout, MemSpace> Jacobian_t;
-    typedef Kokkos::View<Number* [4][4], MemLayout, MemSpace> A_t;
+    typedef Kokkos::View<NumberType* [3][3], MemLayout, MemSpace> Jacobian_t;
+    typedef Kokkos::View<NumberType* [4][4], MemLayout, MemSpace> A_t;
 
     Jacobian_t jacobian("Jacobian", N);
     A_t A("A", N);
@@ -154,11 +162,11 @@ void benchmark(long N, long repeat) {
 
     double flop = 72 * N * 1e-9; // num of GFLOP
     double GFLOPS = flop / T_calculation; // GFLOPS (this is per second)
-    double memory_in = 9 * (N * sizeof(Number) * 1e-9); // GB
+    double memory_in = 9 * (N * sizeof(NumberType) * 1e-9); // GB
     double bw_in = memory_in / T_host_to_device; // GB/s
-    double memory_out = 16 * (N * sizeof(Number) * 1e-9); // GB
+    double memory_out = 16 * (N * sizeof(NumberType) * 1e-9); // GB
     double bw_out = memory_out / T_device_to_host; // GB/s
-    double memory_io = (double)25 * ((double)N * (double)sizeof(Number) * (double)1e-9); // GB
+    double memory_io = (double)25 * ((double)N * (double)sizeof(NumberType) * (double)1e-9); // GB
     double bw_io = memory_io / T_calculation; // GB/s
     double mupd = 16 * N * 1e-6 / T_calculation; // MUPD
 
@@ -209,19 +217,8 @@ void check_args(int argc, char* argv[], long& n_min, long& n_max, long& repeat) 
 
     if (n_max < n_min) n_max = n_min + 1;
 
-    if (std::is_same<Number, float>::value) {
-        std::cout << "datatype: float | ";
-    } else if (std::is_same<Number, double>::value) {
-        std::cout << "datatype: double | ";
-    } else {
-        std::cout << "datatype: unknown | ";
-    }
-
-    if (std::is_same<MemLayout, Kokkos::LayoutLeft>::value) {
-        std::cout << "mem_layout: Kokkos::LayoutLeft" << std::endl;
-    } else if (std::is_same<MemLayout, Kokkos::LayoutRight>::value) {
-        std::cout << "mem_layout: Kokkos::LayoutRight" << std::endl;
-    } else {
-        std::cout << "mem_layout: unknown" << std::endl;
-    }
+    PRINTAPI(NumberType);
+    PRINTAPI(MemSpace);
+    PRINTAPI(MemLayout);
+    PRINTAPI(ExecSpace);
 }

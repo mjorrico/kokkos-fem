@@ -9,4 +9,3 @@ module use /sw/EasyBuild/snowy-gpu/modules/all/
 
 # Load CUDA module
 module load CUDA/12.2.0
-
