@@ -11,3 +11,4 @@ test.cpp
 *.a
 *.cuda
 *.host
+*.out

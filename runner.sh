@@ -2,13 +2,13 @@
 
 #SBATCH -A uppmax2024-2-16
 #SBATCH -M snowy
-#SBATCH -p core
-#SBATCH -n 2
+#SBATCH -p node
+#SBATCH -n 1
 #SBATCH -t 0:20:00
 #SBATCH --gres=gpu:1 --gpus-per-node=1
 #SBATCH -J ABP_task_4
 #SBATCH -D ./
-#SBATCH --output=temp.out
+##SBATCH --output=temp.out
 
 module load gcc/12.2 cuda/12.2.2
 
