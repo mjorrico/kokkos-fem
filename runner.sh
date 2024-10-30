@@ -11,6 +11,7 @@
 ##SBATCH --output=temp.out
 
 module load gcc/12.2 cuda/12.2.2
+export OMP_NUM_THREADS=16
 
 ./fet_double_left.cuda -min 1e4 -max 1e7 -repeat 20 > output/fet_double_left_cuda.txt
 ./fet_double_right.cuda -min 1e4 -max 1e7 -repeat 20 > output/fet_double_right_cuda.txt
